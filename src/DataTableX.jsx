@@ -1,5 +1,6 @@
 let items = {
     initialKey: 'age',
+    initialReverse: false,
     data: [
         {
             id: 0,
@@ -36,61 +37,173 @@ let items = {
     ]
 }
 
+/**
+ * 
+ */
+class TableElement extends React.Component {
+    constructor(props) {
+        // console.log('constructor');
+        super(props);
 
+        this.initialKey = props.items.initialKey;
+        this.items = props.items.data;
+        this.itemKeys = Object.keys(this.items[0]);
 
-// function ListItem(props) {
-//     console.log(props);
-//     return <li>{props.value}</li>;
-// }
-
-// function ListItems(props) {
-//     const items = props.items.data;
-
-//     return (
-//         </ul>
-//             {
-//                 items.map( (item) => <ListItem key={item.name} value={item.name} /> )
-//             }
-//         </ul>
-//     );
-// }
-
-// ReactDOM.render(<ListItems items={items} />, document.getElementById('root'));
-
-function TableCell(props) {
-    let value = props.value;
-    return (
-        <td>{value}</td>
-    )
-}
-
-function TableRow(props) {
-    let item = props.item;
-    let keys = props.keys;
-
-    let TableCells = keys.map((key, index) => {
-        if (key !== 'id') {
-            return (
-                <TableCell key={key} value={item[key]} />
-            )
+        this.state = {
+            items: this.items,
+            reversed: false,
+            activeKey: null,
         }
-    })
 
-    return (
-        <tr>
-            {TableCells}
-        </tr>
-    )
+        this.handleClick = this.handleClick.bind(this);
+        this.handleResetClick = this.handleResetClick.bind(this);
+    }
+
+    /**
+     * 
+     */
+    componentWillMount() {
+        // console.log('componentWillMount');
+        this.setState({
+            items: this.initData(this.items),
+            activeKey: this.initialKey
+        })
+    }
+
+    /**
+     * 
+     */
+    componentDidMount() {
+        // console.log('componentDidMount');
+    }
+
+    /**
+     * 
+     */
+    initData(props) {
+        let initData;
+
+        if (this.initialKey) {
+            initData = this.sortedData(this.initialKey)
+        } else {
+            initData = this.items;
+        }
+
+        return initData;
+    }
+
+    /**
+     * 
+     */
+    clonedData(data) {
+        return data.slice(0);
+    }
+
+    /**
+     * 
+     */
+    sortedData(key) {
+        // console.log('sortedData');
+        let thisClonedData = this.clonedData(this.items);
+        let sortedClonedData = thisClonedData.sort((a, b) => {
+            if (this.state.reversed) {
+                this.setState({reversed: false})
+                return b[key] - a[key];
+            } else {
+                this.setState({reversed: true})
+                return a[key] - b[key];
+            }
+        });
+
+        return sortedClonedData;
+    }
+
+    /**
+     * 
+     */
+    handleState(itemKey) {
+        // console.log(this.sortedData(itemKey));
+        this.setState({
+            items: this.sortedData(itemKey),
+            activeKey: itemKey
+        })
+    }
+
+    /**
+     * 
+     */
+    handleClick(itemKey) {
+        this.handleState(itemKey);
+    }
+
+    /**
+     * 
+     */
+    resetData() {
+        this.setState({
+            items: this.items
+        })
+    }
+
+    /**
+     * 
+     */
+    handleResetClick() {
+        this.resetData();
+    }
+
+    /**
+     * 
+     */
+    render() {
+        // console.log('render');
+        return (
+            <div className="datatablex">
+                <table>
+                    <tbody>
+                        <TableHead activeKey={this.state.activeKey} items={this.items} itemKeys={this.itemKeys} handleClick={this.handleClick} />
+                        <TableRows activeKey={this.state.activeKey} items={this.state.items} itemKeys={this.itemKeys} />
+                    </tbody>
+                </table>
+                <ResetButton handleResetClick={this.handleResetClick} />
+            </div>
+        )
+    }
 }
 
+/**
+ * 
+ */
+function setSortingClass(activeKey, sampleKey) {
+    let className = '';
+
+    if (activeKey === sampleKey) {
+        className += 'is-sorting';
+    } else {
+        className = '';
+    }
+
+    return className;
+}
+
+/**
+ * 
+ */
 function TableHead(props) {
-    let keys = props.keys;
-    console.log(keys);
+    let itemKeys = props.itemKeys;
+    let items = props.items;
+    let sampleItem = items[0];
     
-    let TableHeadCells = keys.map((key, index) => {
-        if (key !== 'id') {
+    let TableHeadCells = itemKeys.map((itemKey, index) => {
+        if (itemKey !== 'id') {
             return (
-                <td>{key}</td>
+                <TableHeadCell 
+                    key={itemKey}
+                    activeKey={props.activeKey}
+                    sampleKey={itemKey} 
+                    sampleKeyValue={sampleItem[itemKey]} 
+                    handleClick={props.handleClick}
+                />
             )
         }
     })
@@ -102,24 +215,100 @@ function TableHead(props) {
     )
 }
 
-function TableElement(props) {
-    let items = props.items.data;
+/**
+ * 
+ */
+function TableHeadCell(props) {
+    let activeKey = props.activeKey;
+    let sampleKey = props.sampleKey;
+    let sampleKeyValue = props.sampleKeyValue;
 
-    let keys = Object.keys(items[0]);
+    let TableHeadCellElement;
 
-    let TableRows = items.map((item, index) => {
+    if (isNaN(sampleKeyValue)) {
+        TableHeadCellElement = (sampleKey)
+    } else {
+        TableHeadCellElement = (<TableToggle sampleKey={sampleKey} handleClick={props.handleClick} />)
+    }
+
+    return (
+        <td className={setSortingClass(activeKey, sampleKey)}>{TableHeadCellElement}</td>
+    )
+}
+
+/**
+ * 
+ */
+function TableToggle(props) {
+    let sampleKey = props.sampleKey;
+    return (
+        <a href="#" onClick={props.handleClick.bind(this, sampleKey)}>{sampleKey}</a>
+    )
+}
+
+/**
+ * 
+ */
+function TableRows(props) {
+    let activeKey = props.activeKey;
+    let items = props.items;
+    let itemKeys = props.itemKeys;
+
+    let tableRows = items.map((item, index) => {
         return (
-            <TableRow key={item.id} keys={keys} item={item} />
+            <TableRow key={item.id} activeKey={activeKey} itemKeys={itemKeys} item={item} />
         )
     })
 
+    return tableRows;
+}
+
+/**
+ * 
+ */
+function TableRow(props) {
+    let activeKey = props.activeKey;
+    let item = props.item;
+    let itemKeys = props.itemKeys;
+
+    let tableCells = itemKeys.map((itemKey, index) => {
+        if (itemKey !== 'id') {
+            return (
+                <TableCell key={itemKey} activeKey={activeKey} itemKey={itemKey} itemValue={item[itemKey]} />
+            )
+        }
+    })
+
     return (
-        <table>
-            <tbody>
-                <TableHead keys={keys} />
-                {TableRows}
-            </tbody>
-        </table>
+        <tr>
+            {tableCells}
+        </tr>
+    )
+}
+
+/**
+ * 
+ */
+function TableCell(props) {
+    let activeKey = props.activeKey;
+    let itemKey = props.itemKey;
+    let itemValue = props.itemValue;
+
+    return (
+        <td className={setSortingClass(activeKey, itemKey)}>{itemValue}</td>
+    )
+}
+
+/**
+ * Reset table data to show defaults
+ */
+
+/**
+ * Reset button component
+ */
+function ResetButton(props) {
+    return (
+        <a href="#" onClick={props.handleResetClick}>reset</a>
     )
 }
 
