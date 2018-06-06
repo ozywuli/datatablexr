@@ -180,7 +180,9 @@ var TableElement = function (_React$Component) {
         key: "resetData",
         value: function resetData() {
             this.setState({
-                items: this.items
+                activeKey: this.initialKey,
+                items: this.items,
+                reversed: false
             });
         }
 

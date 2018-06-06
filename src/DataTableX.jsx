@@ -141,7 +141,9 @@ class TableElement extends React.Component {
      */
     resetData() {
         this.setState({
-            items: this.items
+            activeKey: this.initialKey,
+            items: this.items,
+            reversed: false
         })
     }
 
